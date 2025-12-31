@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Happy New Year — Pannikutty</title>
+  <style>
+    :root{
+      --bg1:#071326; --bg2:#0f3766; --card:rgba(255,255,255,0.04);
+      --accent:#ff5577; --accent-2:#ff8aa3;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:linear-gradient(135deg,var(--bg1),var(--bg2));
+      margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;
+    }
+    .card{width:94%;max-width:920px;padding:2.5rem;border-radius:18px;background:var(--card);backdrop-filter: blur(6px);box-shadow:0 8px 40px rgba(2,6,23,0.6);position:relative;overflow:hidden;text-align:center}
+    h1{font-size:2.4rem;margin:0 0 .4rem;letter-spacing:1px}
+    p{margin:.25rem 0 1rem;font-size:1.05rem;color:rgba(255,255,255,0.92)}
+    .cta{display:inline-flex;gap:.6rem;align-items:center}
+    .btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;padding:.6rem 1rem;border-radius:12px;color:#fff;font-weight:700;cursor:pointer;box-shadow:0 8px 26px rgba(255,85,119,0.16);transition:transform .15s ease}
+    .btn:active{transform:translateY(1px) scale(.995)}
+    .center-heart{display:inline-block;margin-top:.6rem;font-size:2.6rem;animation:pulse 1.2s infinite}
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+    /* Hearts layer */
+    .hearts{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+    .heart{position:absolute;width:28px;height:28px;transform-origin:center bottom;opacity:0;will-change:transform,opacity;color:var(--accent);filter:drop-shadow(0 6px 18px rgba(255,85,119,0.14))}
+    .heart.s1{width:14px;height:14px}
+    .heart.s2{width:20px;height:20px}
+    .heart.s3{width:28px;height:28px}
+    .heart.s4{width:40px;height:40px}
+
+    /* Music controls */
+    .music-controls{display:inline-flex;gap:.5rem;align-items:center;margin-left:.6rem;background:rgba(255,255,255,0.03);padding:.35rem .5rem;border-radius:10px}
+    .icon-btn{background:transparent;border:0;color:#fff;font-size:1.05rem;cursor:pointer;padding:.25rem}
+    .volume{width:110px}
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-labelledby="greet">
+    <h1 id="greet">HAPPY NEW YEAR, PANNIKUTTY</h1>
+    <p>Wishing you a year full of love, laughter, and everything you dream of.</p>
+
+    <div style="display:flex;justify-content:center;gap:1rem;align-items:center;flex-wrap:wrap">
+      <div class="cta">
+        <button id="sendBtn" class="btn" aria-label="Send hearts">Send more hearts</button>
+        <div class="center-heart" aria-hidden="true">❤️</div>
+      </div>
+
+      <div class="music-controls" aria-hidden="false">
+        <button id="playPause" class="icon-btn" aria-pressed="false" title="Play / Pause">▶️</button>
+        <button id="muteBtn" class="icon-btn" title="Mute / Unmute">🔈</button>
+        <input id="volume" class="volume" type="range" min="0" max="1" step="0.01" value="0.60" aria-label="Volume" />
+      </div>
+    </div>
+
+    <div class="hearts" id="hearts" aria-hidden="true"></div>
+  </div>
+
+  <!-- Place your music at assets/music.mp3 or change src to your file path -->
+  <audio id="bgMusic" src="assets/music.mp3" preload="auto" loop></audio>
+
+  <script>
+    // Music controls
+    const bg = document.getElementById('bgMusic');
+    const playPause = document.getElementById('playPause');
+    const muteBtn = document.getElementById('muteBtn');
+    const volume = document.getElementById('volume');
+    bg.volume = parseFloat(volume.value);
+
+    function updatePlayUI(playing){ playPause.textContent = playing ? '⏸️' : '▶️'; playPause.setAttribute('aria-pressed', playing ? 'true' : 'false'); }
+    function updateMuteUI(){ muteBtn.textContent = bg.muted ? '🔇' : '🔈'; }
+
+    playPause.addEventListener('click', async () => {
+      try {
+        if (bg.paused) { await bg.play(); updatePlayUI(true); } else { bg.pause(); updatePlayUI(false); }
+      } catch (e) { updatePlayUI(false); console.warn('Playback failed:', e); }
+    });
+    muteBtn.addEventListener('click', () => { bg.muted = !bg.muted; updateMuteUI(); });
+    volume.addEventListener('input', (e) => { bg.volume = parseFloat(e.target.value); bg.muted = bg.volume === 0; updateMuteUI(); });
+
+    // Try to play on first card click (user gesture)
+    document.querySelector('.card').addEventListener('click', async function once() {
+      try { await bg.play(); updatePlayUI(true); } catch(e) {}
+      this.removeEventListener('click', once);
+    });
+
+    // Hearts animation
+    const heartsContainer = document.getElementById('hearts');
+    const sendBtn = document.getElementById('sendBtn');
+    const HEART_SVG = `<svg viewBox="0 0 32 29.6" xmlns="http://www.w3.org/2000/svg" fill="none"><path d="M23.6 0c-2.7 0-5 1.6-6.6 4-1.6-2.4-3.9-4-6.6-4C3.3 0 .5 3 .5 6.8c0 6 7 10.4 15.5 19 8.6-8.6 15.5-13 15.5-19C31.5 3 28.7 0 23.6 0z" fill="currentColor"/></svg>`;
+
+    function random(min, max){ return Math.random()*(max-min)+min; }
+    function createHeart(){
+      const el = document.createElement('div');
+      el.className = 'heart s' + (Math.floor(Math.random()*4)+1);
+      el.innerHTML = HEART_SVG;
+      el.style.left = random(8,92) + '%';
+      el.style.top = random(58,82) + '%';
+      el.style.color = `hsl(${Math.floor(random(330,355))} ${random(75,95)}% ${random(55,68)}%)`;
+      heartsContainer.appendChild(el);
+      const xDrift = random(-120,120), rise = random(260,480), rotate = random(-40,40), duration = random(2800,4800);
+      requestAnimationFrame(() => {
+        el.style.transition = `transform ${duration}ms cubic-bezier(.2,.8,.2,1), opacity ${duration}ms linear`;
+        el.style.transform = `translate(${xDrift}px, -${rise}px) rotate(${rotate}deg) scale(1)`;
+        el.style.opacity = '1';
+      });
+      setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),600); }, duration-500);
+    }
+    function createHeartBurst(count=12){ for(let i=0;i<count;i++) setTimeout(()=>createHeart(), i*80 + Math.random()*120); }
+    sendBtn.addEventListener('click', ()=>createHeartBurst(18));
+    setTimeout(()=>createHeartBurst(10),700);
+    setInterval(()=>createHeartBurst(Math.floor(random(2,6))),4200);
+  </script>
+</body>
+</html>
